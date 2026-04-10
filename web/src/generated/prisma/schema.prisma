@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  COLABORADOR
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  name           String
+  role           Role     @default(COLABORADOR)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  pacotesCriados Pacote[] @relation("PacoteAutor")
+
+  @@map("users")
+}
+
+model Pacote {
+  id            String               @id @default(cuid())
+  nomePacote    String               @map("nome_pacote")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  createdById   String               @map("created_by_id")
+  createdBy     User                 @relation("PacoteAutor", fields: [createdById], references: [id])
+  cnpjs         PacoteCnpj[]
+  hospitais     PacoteHospital[]
+  contemplacoes PacoteContemplacao[]
+  anexos        PacoteAnexo[]
+
+  @@map("pacotes")
+}
+
+model PacoteCnpj {
+  id       String @id @default(cuid())
+  cnpj     String
+  pacoteId String @map("pacote_id")
+  pacote   Pacote @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+
+  @@unique([pacoteId, cnpj])
+  @@map("pacote_cnpjs")
+}
+
+model PacoteHospital {
+  id       String @id @default(cuid())
+  nome     String
+  pacoteId String @map("pacote_id")
+  pacote   Pacote @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+
+  @@map("pacote_hospitais")
+}
+
+model PacoteContemplacao {
+  id        String @id @default(cuid())
+  codigo    String
+  descricao String @db.Text
+  valor     String
+  pacoteId  String @map("pacote_id")
+  pacote    Pacote @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+
+  @@map("pacote_contemplacoes")
+}
+
+model PacoteAnexo {
+  id           String   @id @default(cuid())
+  nomeOriginal String   @map("nome_original")
+  caminho      String
+  mimeType     String   @map("mime_type")
+  tamanhoBytes Int      @map("tamanho_bytes")
+  createdAt    DateTime @default(now()) @map("created_at")
+  pacoteId     String   @map("pacote_id")
+  pacote       Pacote   @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+
+  @@map("pacote_anexos")
+}

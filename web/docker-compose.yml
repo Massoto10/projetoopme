@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: projeto-opme-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: portal_pacotes
+    ports:
+      # Host 5433 → evita conflito com Postgres na porta 5432 do Windows
+      - "5433:5432"
+    volumes:
+      - portal_pacotes_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d portal_pacotes"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Sobe com: docker compose --profile full up -d
+  app:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: projeto-opme-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/portal_pacotes?schema=public
+      AUTH_URL: http://localhost:3000
+      NODE_ENV: production
+    env_file:
+      - .env
+    volumes:
+      - portal_pacotes_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  portal_pacotes_pgdata:
+  portal_pacotes_uploads:

@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+uploads
+coverage
+.vscode
+.idea
+*.md
+.env
+.env.*
+!env.example

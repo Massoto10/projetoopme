@@ -1,0 +1,50 @@
+# Dependências
+node_modules/
+web/node_modules/
+
+# Next.js
+web/.next/
+web/out/
+web/build/
+
+# Variáveis de ambiente (não commitar segredos)
+.env
+.env.*
+!.env.example
+web/.env
+web/.env.*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+
+# Uploads locais da aplicação
+web/uploads/
+
+# TypeScript / Next
+*.tsbuildinfo
+web/next-env.d.ts
+
+# Vercel
+web/.vercel
+
+# Testes / cobertura
+coverage/
+web/coverage/
+
+# Certificados locais
+*.pem
+
+# Banco SQLite local (se usar)
+*.db
+*.db-journal
