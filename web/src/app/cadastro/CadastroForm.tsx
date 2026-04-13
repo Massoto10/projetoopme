@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-export function LoginForm() {
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
-  const contaCriada = searchParams.get("contaCriada") === "1";
+export function CadastroForm() {
+  const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,23 +16,26 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const res = await signIn("credentials", {
-        email: email.trim().toLowerCase(),
-        password,
-        redirect: false,
+      const res = await fetch("/api/setup/primeiro-usuario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
-      if (res?.error) {
-        setError("E-mail ou senha incorretos.");
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!res.ok) {
+        setError(data.error ?? "Não foi possível concluir o cadastro.");
         setLoading(false);
         return;
       }
-      const next =
-        callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
-          ? callbackUrl
-          : "/dashboard";
-      window.location.href = next;
+      router.push("/login?contaCriada=1");
     } catch {
-      setError("Falha ao entrar. Tente novamente.");
+      setError("Falha ao cadastrar. Tente novamente.");
       setLoading(false);
     }
   }
@@ -45,17 +46,9 @@ export function LoginForm() {
         Projeto OPME
       </h1>
       <p className="mt-1 text-center text-sm text-neutral-600">
-        Acesso ao sistema
+        Cadastro do administrador inicial
       </p>
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        {contaCriada && (
-          <div
-            className="border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
-            role="status"
-          >
-            Conta criada. Faça login com seu e-mail e senha.
-          </div>
-        )}
         {error && (
           <div
             className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
@@ -64,6 +57,24 @@ export function LoginForm() {
             {error}
           </div>
         )}
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-neutral-800"
+          >
+            Nome
+          </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-1 w-full border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+          />
+        </div>
         <div>
           <label
             htmlFor="email"
@@ -75,7 +86,7 @@ export function LoginForm() {
             id="email"
             name="email"
             type="email"
-            autoComplete="username"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -93,19 +104,23 @@ export function LoginForm() {
             id="password"
             name="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             required
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 w-full border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-400"
           />
+          <p className="mt-1 text-xs text-neutral-500">
+            Mínimo de 8 caracteres.
+          </p>
         </div>
         <button
           type="submit"
           disabled={loading}
           className="w-full border border-neutral-800 bg-neutral-800 py-2.5 text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-50"
         >
-          {loading ? "Entrando…" : "Entrar"}
+          {loading ? "Cadastrando…" : "Criar conta"}
         </button>
       </form>
     </div>

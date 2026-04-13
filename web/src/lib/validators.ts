@@ -51,6 +51,11 @@ export const colaboradorCreateSchema = z.object({
   role: z.enum(["COLABORADOR", "ADMIN"]).default("COLABORADOR"),
 });
 
+/** Primeiro usuário do sistema (bootstrap); papel ADMIN fixo no servidor. */
+export const primeiroUsuarioSchema = colaboradorCreateSchema.omit({
+  role: true,
+});
+
 export const colaboradorUpdateSchema = z.object({
   email: z.string().email().max(255).toLowerCase().trim().optional(),
   name: z.string().min(1).max(200).trim().optional(),
