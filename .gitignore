@@ -48,3 +48,4 @@ web/coverage/
 # Banco SQLite local (se usar)
 *.db
 *.db-journal
+.vercel
