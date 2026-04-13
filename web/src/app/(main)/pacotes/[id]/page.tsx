@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
+import { formatCnpjDisplay, isValidCnpjDigits } from "@/lib/cnpj";
 import { prisma } from "@/lib/prisma";
 import { AnexosPanel } from "@/components/AnexosPanel";
+import { PacoteHospitaisBuscaCnpj } from "@/components/PacoteHospitaisBuscaCnpj";
 import { PacoteForm, type PacoteFormInitial } from "@/components/PacoteForm";
 
 type Props = { params: Promise<{ id: string }> };
@@ -29,11 +31,13 @@ export default async function PacoteDetailPage({ params }: Props) {
   const initial: PacoteFormInitial = {
     codigoPacote: pacote.codigoPacote,
     nomePacote: pacote.nomePacote,
+    textoContemplacao: pacote.textoContemplacao ?? "",
     hospitais: pacote.hospitais.length
       ? pacote.hospitais.map((h) => ({
           id: h.hospital.id,
           nome: h.hospital.nome,
           cnpj: h.hospital.cnpj,
+          observacao: h.observacao ?? "",
         }))
       : [],
     contemplacoes: pacote.contemplacoes.length
@@ -71,6 +75,38 @@ export default async function PacoteDetailPage({ params }: Props) {
           {pacote.updatedAt.toLocaleString("pt-BR")}
         </p>
       </div>
+
+      {!isAdmin && (
+        <section
+          className="border border-neutral-300 bg-white p-5"
+          aria-labelledby="sec-fornecedores-obs"
+        >
+          <h2
+            id="sec-fornecedores-obs"
+            className="text-sm font-semibold uppercase tracking-wide text-neutral-700"
+          >
+            Hospitais / fornecedores e observações
+          </h2>
+          <p className="mt-1 text-xs text-neutral-600">
+            Cada observação vale só para este pacote e para o fornecedor indicado.
+          </p>
+          <PacoteHospitaisBuscaCnpj
+            items={pacote.hospitais.map((row) => {
+              const cnpj = row.hospital.cnpj;
+              return {
+                id: row.id,
+                nome: row.hospital.nome,
+                cnpj,
+                cnpjLabel: isValidCnpjDigits(cnpj)
+                  ? formatCnpjDisplay(cnpj)
+                  : cnpj,
+                observacao: row.observacao?.trim() ?? "",
+              };
+            })}
+            emptyListMessage="Nenhum hospital ou fornecedor vinculado a este pacote."
+          />
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-700">

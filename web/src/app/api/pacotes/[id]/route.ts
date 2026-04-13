@@ -3,7 +3,14 @@ import { join } from "path";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireUser } from "@/lib/api-auth";
 import { isCodigoPacoteUniqueError } from "@/lib/prisma-errors";
-import { pacotePayloadSchema } from "@/lib/validators";
+import {
+  observacaoForPacoteHospital,
+  pacotePayloadSchema,
+} from "@/lib/validators";
+import {
+  sqlInsertPacoteHospital,
+  sqlUpdatePacoteCadastro,
+} from "@/lib/pacote-sql";
 import { safeUnlink } from "@/lib/uploads";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -46,6 +53,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     id: pacote.id,
     codigoPacote: pacote.codigoPacote,
     nomePacote: pacote.nomePacote,
+    textoContemplacao: pacote.textoContemplacao ?? "",
     createdAt: pacote.createdAt,
     updatedAt: pacote.updatedAt,
     autor: pacote.createdBy,
@@ -53,6 +61,7 @@ export async function GET(_req: Request, ctx: Ctx) {
       hospitalId: h.hospital.id,
       nome: h.hospital.nome,
       cnpj: h.hospital.cnpj,
+      observacao: h.observacao,
     })),
     contemplacoes: pacote.contemplacoes.map((c) => ({
       id: c.id,
@@ -88,8 +97,14 @@ export async function PATCH(req: Request, ctx: Ctx) {
     );
   }
 
-  const { codigoPacote, nomePacote, hospitalIds, contemplacoes } =
-    parsed.data;
+  const {
+    codigoPacote,
+    nomePacote,
+    textoContemplacao,
+    hospitalIds,
+    hospitalObservacoes,
+    contemplacoes,
+  } = parsed.data;
 
   const found = await prisma.hospital.count({
     where: { id: { in: hospitalIds } },
@@ -102,28 +117,32 @@ export async function PATCH(req: Request, ctx: Ctx) {
   }
 
   try {
-    await prisma.$transaction([
-      prisma.pacoteHospital.deleteMany({ where: { pacoteId: id } }),
-      prisma.pacoteContemplacao.deleteMany({ where: { pacoteId: id } }),
-      prisma.pacote.update({
-        where: { id },
-        data: {
-          codigoPacote,
-          nomePacote,
-          hospitais: {
-            create: hospitalIds.map((hospitalId) => ({
-              hospital: { connect: { id: hospitalId } },
-            })),
-          },
-          contemplacoes: {
-            create: contemplacoes.map((c) => ({
-              codigo: c.codigo,
-              descricao: c.descricao,
-            })),
-          },
-        },
-      }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      await tx.pacoteHospital.deleteMany({ where: { pacoteId: id } });
+      await tx.pacoteContemplacao.deleteMany({ where: { pacoteId: id } });
+      await sqlUpdatePacoteCadastro(tx, id, {
+        codigoPacote,
+        nomePacote,
+        textoContemplacao,
+      });
+      for (const hospitalId of hospitalIds) {
+        await sqlInsertPacoteHospital(tx, {
+          pacoteId: id,
+          hospitalId,
+          observacao: observacaoForPacoteHospital(
+            hospitalObservacoes,
+            hospitalId,
+          ),
+        });
+      }
+      await tx.pacoteContemplacao.createMany({
+        data: contemplacoes.map((c) => ({
+          pacoteId: id,
+          codigo: c.codigo,
+          descricao: c.descricao,
+        })),
+      });
+    });
   } catch (e) {
     if (isCodigoPacoteUniqueError(e)) {
       return NextResponse.json(

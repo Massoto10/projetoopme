@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
+import {
+  PacoteHospitaisBuscaCnpj,
+  type PacoteHospitalBuscaItem,
+} from "@/components/PacoteHospitaisBuscaCnpj";
 
-export type PacoteDetailsHospital = { nome: string; cnpjLabel: string };
+/** @deprecated Use PacoteHospitalBuscaItem; mantido para compatibilidade. */
+export type PacoteDetailsHospital = PacoteHospitalBuscaItem;
 
 export type PacoteDetailsContemplacao = {
   codigo: string;
@@ -15,7 +20,8 @@ type Props = {
   pacoteId: string;
   codigoPacote: string;
   nomePacote: string;
-  hospitais: PacoteDetailsHospital[];
+  textoContemplacaoPreview: string;
+  hospitais: PacoteHospitalBuscaItem[];
   contemplacoes: PacoteDetailsContemplacao[];
   pdfCount: number;
   canManage: boolean;
@@ -25,6 +31,7 @@ export function PacoteRowDetailsDialog({
   pacoteId,
   codigoPacote,
   nomePacote,
+  textoContemplacaoPreview,
   hospitais,
   contemplacoes,
   pdfCount,
@@ -134,30 +141,31 @@ export function PacoteRowDetailsDialog({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
               <section className="pb-5">
                 <h3 className="text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-500">
-                  Hospitais
+                  Contemplação
                 </h3>
-                <ul className="mt-3 space-y-3 text-sm leading-snug text-neutral-800">
-                  {hospitais.length === 0 ? (
-                    <li className="text-neutral-500">Nenhum</li>
-                  ) : (
-                    hospitais.map((h, i) => (
-                      <li
-                        key={`${h.nome}-${i}`}
-                        className="border-b border-neutral-100 pb-3 last:border-0"
-                      >
-                        <span className="font-medium text-neutral-900">{h.nome}</span>
-                        <span className="mt-1 block text-sm text-neutral-600">
-                          CNPJ {h.cnpjLabel}
-                        </span>
-                      </li>
-                    ))
-                  )}
-                </ul>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
+                  {textoContemplacaoPreview.trim()
+                    ? textoContemplacaoPreview
+                    : "—"}
+                </p>
+              </section>
+
+              <section className="border-t border-neutral-200 pb-5 pt-5">
+                <h3 className="text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-500">
+                  Hospitais / fornecedores
+                </h3>
+                <p className="mt-1 text-xs text-neutral-500">
+                  Observações abaixo são por vínculo neste pacote (não se repetem em outros pacotes).
+                </p>
+                <PacoteHospitaisBuscaCnpj
+                  items={hospitais}
+                  emptyListMessage="Nenhum hospital ou fornecedor vinculado."
+                />
               </section>
 
               <section className="border-t border-neutral-200 pt-5 pb-5">
                 <h3 className="text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-500">
-                  Contemplações
+                  Contemplações (código)
                 </h3>
                 <ul className="mt-3 space-y-4 text-sm text-neutral-800">
                   {contemplacoes.length === 0 ? (

@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl   = env("DIRECT_URL")
 }
 
 enum Role {
@@ -38,9 +37,10 @@ model Hospital {
 }
 
 model Pacote {
-  id             String               @id @default(cuid())
-  codigoPacote   String               @unique @map("codigo_pacote")
-  nomePacote     String               @map("nome_pacote")
+  id                 String               @id @default(cuid())
+  codigoPacote       String               @unique @map("codigo_pacote")
+  nomePacote         String               @map("nome_pacote")
+  textoContemplacao  String               @map("texto_contemplacao") @db.Text
   createdAt      DateTime             @default(now()) @map("created_at")
   updatedAt      DateTime             @updatedAt @map("updated_at")
   createdById    String               @map("created_by_id")
@@ -58,6 +58,7 @@ model PacoteHospital {
   pacote     Pacote   @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
   hospitalId String   @map("hospital_id")
   hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Restrict)
+  observacao String?  @map("observacao") @db.Text
 
   @@unique([pacoteId, hospitalId])
   @@map("pacote_hospitais")

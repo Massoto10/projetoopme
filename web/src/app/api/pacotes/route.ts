@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireUser } from "@/lib/api-auth";
-import { isCodigoPacoteUniqueError } from "@/lib/prisma-errors";
-import { pacotePayloadSchema } from "@/lib/validators";
+import {
+  isCodigoPacoteUniqueError,
+  isPacoteCreatedByFkError,
+} from "@/lib/prisma-errors";
+import {
+  observacaoForPacoteHospital,
+  pacotePayloadSchema,
+} from "@/lib/validators";
 
 export async function GET() {
   const authResult = await requireUser();
@@ -54,8 +60,14 @@ export async function POST(req: Request) {
     );
   }
 
-  const { codigoPacote, nomePacote, hospitalIds, contemplacoes } =
-    parsed.data;
+  const {
+    codigoPacote,
+    nomePacote,
+    textoContemplacao,
+    hospitalIds,
+    hospitalObservacoes,
+    contemplacoes,
+  } = parsed.data;
 
   const found = await prisma.hospital.count({
     where: { id: { in: hospitalIds } },
@@ -72,10 +84,15 @@ export async function POST(req: Request) {
       data: {
         codigoPacote,
         nomePacote,
+        textoContemplacao,
         createdById: authResult.session.user.id,
         hospitais: {
           create: hospitalIds.map((hospitalId) => ({
             hospital: { connect: { id: hospitalId } },
+            observacao: observacaoForPacoteHospital(
+              hospitalObservacoes,
+              hospitalId,
+            ),
           })),
         },
         contemplacoes: {
@@ -92,6 +109,15 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Já existe um pacote com este código." },
         { status: 409 },
+      );
+    }
+    if (isPacoteCreatedByFkError(e)) {
+      return NextResponse.json(
+        {
+          error:
+            "Seu usuário não existe mais neste banco (sessão antiga ou banco recriado). Saia da conta, rode yarn db:seed se necessário e faça login de novo.",
+        },
+        { status: 401 },
       );
     }
     throw e;

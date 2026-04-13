@@ -33,3 +33,14 @@ export function isHospitalCnpjUniqueError(error: unknown): boolean {
       : [];
   return fields.includes("cnpj");
 }
+
+/** FK pacotes.created_by_id → users (sessão com id obsoleto após reset do banco). */
+export function isPacoteCreatedByFkError(error: unknown): boolean {
+  if (
+    !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+    error.code !== "P2003"
+  ) {
+    return false;
+  }
+  return error.meta?.constraint === "pacotes_created_by_id_fkey";
+}

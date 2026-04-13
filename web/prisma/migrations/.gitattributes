@@ -1,0 +1,2 @@
+# Evita CRLF no Windows: o checksum da migration no banco deve bater com o arquivo no repositório.
+*.sql text eol=lf

@@ -47,7 +47,7 @@ export default async function PacotesListPage({
       },
       hospitais: {
         include: {
-          hospital: { select: { nome: true, cnpj: true } },
+          hospital: { select: { id: true, nome: true, cnpj: true } },
         },
       },
       contemplacoes: {
@@ -236,13 +236,22 @@ export default async function PacotesListPage({
                       pacoteId={p.id}
                       codigoPacote={p.codigoPacote}
                       nomePacote={p.nomePacote}
+                      textoContemplacaoPreview={(() => {
+                        const t = p.textoContemplacao ?? "";
+                        return t.length > previewLen
+                          ? `${t.slice(0, previewLen).trim()}…`
+                          : t;
+                      })()}
                       pdfCount={p._count.anexos}
                       canManage={isAdmin}
                       hospitais={p.hospitais.map((h) => ({
+                        id: h.hospital.id,
                         nome: h.hospital.nome,
+                        cnpj: h.hospital.cnpj,
                         cnpjLabel: isValidCnpjDigits(h.hospital.cnpj)
                           ? formatCnpjDisplay(h.hospital.cnpj)
                           : h.hospital.cnpj,
+                        observacao: h.observacao?.trim() ?? "",
                       }))}
                       contemplacoes={p.contemplacoes.map((c) => ({
                         codigo: c.codigo,

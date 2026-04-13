@@ -28,21 +28,53 @@ export const hospitalCreateSchema = z
     path: ["cnpj"],
   });
 
-export const pacotePayloadSchema = z.object({
-  codigoPacote: codigoPacoteField,
-  nomePacote: z.string().min(1).max(500).trim(),
-  hospitalIds: z
-    .array(z.string().min(1))
-    .min(1, "Informe ao menos um hospital.")
-    .max(200)
-    .transform((ids) => [...new Set(ids)]),
-  contemplacoes: z
-    .array(contemplacaoSchema)
-    .min(1, "Informe ao menos uma contemplação.")
-    .max(500),
-});
+export const pacotePayloadSchema = z
+  .object({
+    codigoPacote: codigoPacoteField,
+    nomePacote: z.string().trim().min(1).max(500),
+    textoContemplacao: z
+      .string()
+      .trim()
+      .max(8000)
+      .min(1, "Informe a contemplação do pacote."),
+    hospitalIds: z
+      .array(z.string().min(1))
+      .min(1, "Informe ao menos um hospital.")
+      .max(200)
+      .transform((ids) => [...new Set(ids)]),
+    hospitalObservacoes: z.record(z.string(), z.string().max(8000)).optional(),
+    contemplacoes: z
+      .array(contemplacaoSchema)
+      .min(1, "Informe ao menos uma contemplação.")
+      .max(500),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.hospitalObservacoes) return;
+    const ids = new Set(data.hospitalIds);
+    for (const key of Object.keys(data.hospitalObservacoes)) {
+      if (!ids.has(key)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Hospital não pertence a este pacote.",
+          path: ["hospitalObservacoes", key],
+        });
+      }
+    }
+  });
 
 export type PacotePayload = z.infer<typeof pacotePayloadSchema>;
+
+/** Observação persistida no vínculo pacote–hospital; vazio ou só espaços vira null. */
+export function observacaoForPacoteHospital(
+  map: Record<string, string> | undefined,
+  hospitalId: string,
+): string | null {
+  if (!map) return null;
+  const raw = map[hospitalId];
+  if (raw === undefined) return null;
+  const t = raw.trim();
+  return t.length > 0 ? t : null;
+}
 
 export const colaboradorCreateSchema = z.object({
   email: z.string().email().max(255).toLowerCase().trim(),

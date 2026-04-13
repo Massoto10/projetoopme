@@ -1,5 +1,11 @@
-import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// web/.env vence variáveis herdadas do shell (ex.: DATABASE_URL antiga na sessão).
+dotenv.config({ path: path.join(__dirname, "..", ".env"), override: true });
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

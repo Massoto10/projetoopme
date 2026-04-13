@@ -7,14 +7,50 @@ import { formatCnpjDisplay, isValidCnpjDigits, normalizeCnpj } from "@/lib/cnpj"
 const inputCls =
   "w-full border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-400";
 
+type ApiErrorBody = {
+  error?: string;
+  details?: {
+    formErrors?: string[];
+    fieldErrors?: Record<string, string[] | undefined>;
+  };
+};
+
+function formatApiSaveError(data: unknown): string {
+  if (typeof data !== "object" || data === null) {
+    return "Não foi possível salvar. Verifique os campos.";
+  }
+  const { error, details } = data as ApiErrorBody;
+  const parts: string[] = [];
+  if (details?.fieldErrors) {
+    for (const msgs of Object.values(details.fieldErrors)) {
+      if (msgs?.length) parts.push(...msgs);
+    }
+  }
+  if (details?.formErrors?.length) {
+    parts.push(...details.formErrors);
+  }
+  if (parts.length > 0) {
+    const head = typeof error === "string" ? `${error} ` : "";
+    return `${head}${parts.join(" ")}`.trim();
+  }
+  if (typeof error === "string") return error;
+  return "Não foi possível salvar. Verifique os campos.";
+}
+
 export type ContemplacaoRow = { codigo: string; descricao: string };
 
 /** Hospital já vinculado ao pacote (cadastro global). */
-export type PacoteHospitalInForm = { id: string; nome: string; cnpj: string };
+export type PacoteHospitalInForm = {
+  id: string;
+  nome: string;
+  cnpj: string;
+  observacao?: string;
+};
 
 export type PacoteFormInitial = {
   codigoPacote: string;
   nomePacote: string;
+  textoContemplacao: string;
   hospitais: PacoteHospitalInForm[];
   contemplacoes: ContemplacaoRow[];
 };
@@ -36,6 +72,9 @@ export function PacoteForm({
   );
   const [nomePacote, setNomePacote] = useState(
     initial?.nomePacote ?? "",
+  );
+  const [textoContemplacao, setTextoContemplacao] = useState(
+    initial?.textoContemplacao ?? "",
   );
   const [hospitais, setHospitais] = useState<PacoteHospitalInForm[]>(
     initial?.hospitais ?? [],
@@ -63,12 +102,21 @@ export function PacoteForm({
   const [loading, setLoading] = useState(false);
 
   function buildPayload() {
+    const hospitalObservacoes: Record<string, string> = {};
+    for (const h of hospitais) {
+      const o = (h.observacao ?? "").trim();
+      if (o) hospitalObservacoes[h.id] = o;
+    }
     return {
       codigoPacote: codigoPacote.trim(),
       nomePacote: nomePacote.trim(),
+      textoContemplacao: textoContemplacao.trim(),
       hospitalIds: hospitais.map((h) => h.id),
+      ...(Object.keys(hospitalObservacoes).length > 0
+        ? { hospitalObservacoes }
+        : {}),
       contemplacoes: contemplacoes
-        .filter((c) => c.codigo.trim() || c.descricao.trim())
+        .filter((c) => c.codigo.trim() && c.descricao.trim())
         .map((c) => ({
           codigo: c.codigo.trim(),
           descricao: c.descricao.trim(),
@@ -79,7 +127,7 @@ export function PacoteForm({
   function adicionarHospital(h: ApiHospital) {
     setHospitais((prev) => {
       if (prev.some((x) => x.id === h.id)) return prev;
-      return [...prev, { id: h.id, nome: h.nome, cnpj: h.cnpj }];
+      return [...prev, { id: h.id, nome: h.nome, cnpj: h.cnpj, observacao: "" }];
     });
     setBuscaResultado(null);
     setBuscaCnpj("");
@@ -184,11 +232,7 @@ export function PacoteForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(
-          typeof data.error === "string"
-            ? data.error
-            : "Não foi possível salvar. Verifique os campos.",
-        );
+        setError(formatApiSaveError(data));
         setLoading(false);
         return;
       }
@@ -216,21 +260,10 @@ export function PacoteForm({
         <Field label="Nome do pacote">
           <p className="text-sm text-neutral-900">{payload.nomePacote || "—"}</p>
         </Field>
-        <Field label="Hospitais">
-          <ul className="list-inside list-disc text-sm text-neutral-800">
-            {hospitais.length ? (
-              hospitais.map((h, i) => (
-                <li key={`${h.id}-${i}`}>
-                  {h.nome} — CNPJ{" "}
-                  {isValidCnpjDigits(h.cnpj)
-                    ? formatCnpjDisplay(h.cnpj)
-                    : h.cnpj}
-                </li>
-              ))
-            ) : (
-              <li className="list-none text-neutral-500">Nenhum</li>
-            )}
-          </ul>
+        <Field label="Contemplação">
+          <p className="whitespace-pre-wrap text-sm text-neutral-900">
+            {textoContemplacao.trim() || "—"}
+          </p>
         </Field>
         <Field label="Contemplações">
           <div className="overflow-x-auto border border-neutral-300">
@@ -306,8 +339,21 @@ export function PacoteForm({
       </Field>
 
       <Field
-        label="Hospitais"
-        hint="Busque pelo CNPJ ou use o botão Cadastrar novo hospital para incluir um cadastro que ainda não existe na base."
+        label="Contemplação"
+        hint="Descrição geral do pacote (obrigatória). Distinta das linhas de código e descrição abaixo."
+      >
+        <textarea
+          required
+          rows={5}
+          value={textoContemplacao}
+          onChange={(e) => setTextoContemplacao(e.target.value)}
+          className={inputCls}
+        />
+      </Field>
+
+      <Field
+        label="Hospitais / fornecedores"
+        hint="Busque pelo CNPJ ou use o botão Cadastrar novo hospital para incluir um cadastro que ainda não existe na base. A observação de cada um vale só para este pacote."
       >
         <div className="space-y-4 border border-neutral-300 bg-neutral-50/50 p-4">
           <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end">
@@ -464,27 +510,50 @@ export function PacoteForm({
                 {hospitais.map((h) => (
                   <li
                     key={h.id}
-                    className="flex flex-wrap items-center justify-between gap-2 border border-neutral-200 bg-white px-3 py-2 text-sm"
+                    className="space-y-2 border border-neutral-200 bg-white px-3 py-2 text-sm"
                   >
-                    <span>
-                      <span className="font-medium text-neutral-900">
-                        {h.nome}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span>
+                        <span className="font-medium text-neutral-900">
+                          {h.nome}
+                        </span>
+                        <span className="ml-2 font-mono text-xs text-neutral-600">
+                          {isValidCnpjDigits(h.cnpj)
+                            ? formatCnpjDisplay(h.cnpj)
+                            : h.cnpj}
+                        </span>
                       </span>
-                      <span className="ml-2 font-mono text-xs text-neutral-600">
-                        {isValidCnpjDigits(h.cnpj)
-                          ? formatCnpjDisplay(h.cnpj)
-                          : h.cnpj}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setHospitais((prev) => prev.filter((x) => x.id !== h.id))
-                      }
-                      className="text-sm text-neutral-700 underline"
-                    >
-                      Remover
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setHospitais((prev) =>
+                            prev.filter((x) => x.id !== h.id),
+                          )
+                        }
+                        className="text-sm text-neutral-700 underline"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-neutral-600">
+                        Observação (opcional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={h.observacao ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setHospitais((prev) =>
+                            prev.map((x) =>
+                              x.id === h.id ? { ...x, observacao: v } : x,
+                            ),
+                          );
+                        }}
+                        placeholder="Somente para este hospital neste pacote"
+                        className={`mt-1 ${inputCls}`}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -561,6 +630,7 @@ export function PacoteForm({
           onClick={() => {
             setCodigoPacote("");
             setNomePacote("");
+            setTextoContemplacao("");
             setHospitais([]);
             setContemplacoes([{ codigo: "", descricao: "" }]);
             setBuscaCnpj("");
