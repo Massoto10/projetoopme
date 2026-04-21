@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { formatCnpjDisplay, isValidCnpjDigits } from "@/lib/cnpj";
 import { prisma } from "@/lib/prisma";
-import { AnexosPanel } from "@/components/AnexosPanel";
-import { PacoteHospitaisBuscaCnpj } from "@/components/PacoteHospitaisBuscaCnpj";
+import { PacoteAnexosCollapsible } from "@/components/PacoteAnexosCollapsible";
+import { PacoteColaboradorFornecedoresPanel } from "@/components/PacoteColaboradorFornecedoresPanel";
 import { PacoteForm, type PacoteFormInitial } from "@/components/PacoteForm";
 
 type Props = { params: Promise<{ id: string }> };
@@ -31,6 +31,7 @@ export default async function PacoteDetailPage({ params }: Props) {
   const initial: PacoteFormInitial = {
     codigoPacote: pacote.codigoPacote,
     nomePacote: pacote.nomePacote,
+    situacao: pacote.situacao,
     textoContemplacao: pacote.textoContemplacao ?? "",
     hospitais: pacote.hospitais.length
       ? pacote.hospitais.map((h) => ({
@@ -77,35 +78,21 @@ export default async function PacoteDetailPage({ params }: Props) {
       </div>
 
       {!isAdmin && (
-        <section
-          className="border border-neutral-300 bg-white p-5"
-          aria-labelledby="sec-fornecedores-obs"
-        >
-          <h2
-            id="sec-fornecedores-obs"
-            className="text-sm font-semibold uppercase tracking-wide text-neutral-700"
-          >
-            Hospitais / fornecedores e observações
-          </h2>
-          <p className="mt-1 text-xs text-neutral-600">
-            Cada observação vale só para este pacote e para o fornecedor indicado.
-          </p>
-          <PacoteHospitaisBuscaCnpj
-            items={pacote.hospitais.map((row) => {
-              const cnpj = row.hospital.cnpj;
-              return {
-                id: row.id,
-                nome: row.hospital.nome,
-                cnpj,
-                cnpjLabel: isValidCnpjDigits(cnpj)
-                  ? formatCnpjDisplay(cnpj)
-                  : cnpj,
-                observacao: row.observacao?.trim() ?? "",
-              };
-            })}
-            emptyListMessage="Nenhum hospital ou fornecedor vinculado a este pacote."
-          />
-        </section>
+        <PacoteColaboradorFornecedoresPanel
+          items={pacote.hospitais.map((row) => {
+            const cnpj = row.hospital.cnpj;
+            return {
+              id: row.id,
+              nome: row.hospital.nome,
+              cnpj,
+              cnpjLabel: isValidCnpjDigits(cnpj)
+                ? formatCnpjDisplay(cnpj)
+                : cnpj,
+              observacao: row.observacao?.trim() ?? "",
+            };
+          })}
+          emptyListMessage="Nenhum hospital ou fornecedor vinculado a este pacote."
+        />
       )}
 
       <section className="space-y-3">
@@ -121,13 +108,11 @@ export default async function PacoteDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <div className="border border-neutral-300 bg-white p-5">
-        <AnexosPanel
-          pacoteId={pacote.id}
-          anexos={anexos}
-          canManage={isAdmin}
-        />
-      </div>
+      <PacoteAnexosCollapsible
+        pacoteId={pacote.id}
+        anexos={anexos}
+        canManage={isAdmin}
+      />
     </div>
   );
 }

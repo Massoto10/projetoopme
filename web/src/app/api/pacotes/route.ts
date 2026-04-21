@@ -33,6 +33,7 @@ export async function GET() {
       id: p.id,
       codigoPacote: p.codigoPacote,
       nomePacote: p.nomePacote,
+      situacao: p.situacao,
       updatedAt: p.updatedAt,
       createdAt: p.createdAt,
       autor: p.createdBy,
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
   const {
     codigoPacote,
     nomePacote,
+    situacao,
     textoContemplacao,
     hospitalIds,
     hospitalObservacoes,
@@ -84,6 +86,7 @@ export async function POST(req: Request) {
       data: {
         codigoPacote,
         nomePacote,
+        situacao,
         textoContemplacao,
         createdById: authResult.session.user.id,
         hospitais: {

@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { formatCnpjDisplay, isValidCnpjDigits, normalizeCnpj } from "@/lib/cnpj";
+import {
+  labelPacoteSituacao,
+  PACOTE_SITUACAO_OPTIONS,
+  type PacoteSituacaoValue,
+} from "@/lib/pacote-situacao";
 
 const inputCls =
   "w-full border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-400";
@@ -50,6 +56,7 @@ export type PacoteHospitalInForm = {
 export type PacoteFormInitial = {
   codigoPacote: string;
   nomePacote: string;
+  situacao?: PacoteSituacaoValue;
   textoContemplacao: string;
   hospitais: PacoteHospitalInForm[];
   contemplacoes: ContemplacaoRow[];
@@ -72,6 +79,9 @@ export function PacoteForm({
   );
   const [nomePacote, setNomePacote] = useState(
     initial?.nomePacote ?? "",
+  );
+  const [situacao, setSituacao] = useState<PacoteSituacaoValue>(
+    initial?.situacao ?? "ATIVO",
   );
   const [textoContemplacao, setTextoContemplacao] = useState(
     initial?.textoContemplacao ?? "",
@@ -110,6 +120,7 @@ export function PacoteForm({
     return {
       codigoPacote: codigoPacote.trim(),
       nomePacote: nomePacote.trim(),
+      situacao,
       textoContemplacao: textoContemplacao.trim(),
       hospitalIds: hospitais.map((h) => h.id),
       ...(Object.keys(hospitalObservacoes).length > 0
@@ -251,60 +262,82 @@ export function PacoteForm({
   if (readOnly) {
     const payload = buildPayload();
     return (
-      <div className="space-y-5">
-        <Field label="Código do pacote">
-          <p className="font-mono text-sm text-neutral-900">
-            {payload.codigoPacote || "—"}
-          </p>
-        </Field>
-        <Field label="Nome do pacote">
-          <p className="text-sm text-neutral-900">{payload.nomePacote || "—"}</p>
-        </Field>
-        <Field label="Contemplação">
-          <p className="whitespace-pre-wrap text-sm text-neutral-900">
-            {textoContemplacao.trim() || "—"}
-          </p>
-        </Field>
-        <Field label="Contemplações">
-          <div className="overflow-x-auto border border-neutral-300">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-neutral-300 bg-neutral-100">
-                <tr>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase text-neutral-700">
-                    Código
-                  </th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase text-neutral-700">
-                    Descrição
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {payload.contemplacoes.length ? (
-                  payload.contemplacoes.map((c, i) => (
-                    <tr key={`${c.codigo}-${i}`} className="border-t border-neutral-200">
-                      <td className="px-3 py-2 align-top">{c.codigo}</td>
-                      <td className="px-3 py-2 align-top whitespace-pre-wrap">
-                        {c.descricao}
+      <div className="space-y-4">
+        <CollapsibleSection
+          title="Identificação e situação"
+          subtitle="Código, nome e classificação do pacote."
+        >
+          <div className="space-y-5">
+            <Field label="Código do pacote">
+              <p className="font-mono text-sm text-neutral-900">
+                {payload.codigoPacote || "—"}
+              </p>
+            </Field>
+            <Field label="Nome do pacote">
+              <p className="text-sm text-neutral-900">{payload.nomePacote || "—"}</p>
+            </Field>
+            <Field label="Situação">
+              <p className="text-sm text-neutral-900">
+                {labelPacoteSituacao(situacao)}
+              </p>
+            </Field>
+          </div>
+        </CollapsibleSection>
+        <CollapsibleSection
+          title="Contemplação"
+          subtitle="Texto geral do pacote."
+        >
+          <Field label="Contemplação">
+            <p className="whitespace-pre-wrap text-sm text-neutral-900">
+              {textoContemplacao.trim() || "—"}
+            </p>
+          </Field>
+        </CollapsibleSection>
+        <CollapsibleSection
+          title="Códigos TUSS"
+          subtitle="Código TUSS e descrição vinculados ao pacote."
+        >
+          <Field label="Códigos TUSS">
+            <div className="overflow-x-auto border border-neutral-300">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-neutral-300 bg-neutral-100">
+                  <tr>
+                    <th className="px-3 py-2 text-xs font-semibold uppercase text-neutral-700">
+                      Código
+                    </th>
+                    <th className="px-3 py-2 text-xs font-semibold uppercase text-neutral-700">
+                      Descrição
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payload.contemplacoes.length ? (
+                    payload.contemplacoes.map((c, i) => (
+                      <tr key={`${c.codigo}-${i}`} className="border-t border-neutral-200">
+                        <td className="px-3 py-2 align-top">{c.codigo}</td>
+                        <td className="px-3 py-2 align-top whitespace-pre-wrap">
+                          {c.descricao}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={2} className="px-3 py-2 text-neutral-500">
+                        Nenhum
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={2} className="px-3 py-2 text-neutral-500">
-                      Nenhuma
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Field>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Field>
+        </CollapsibleSection>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div
           className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
@@ -313,47 +346,77 @@ export function PacoteForm({
           {error}
         </div>
       )}
-      <Field
-        label="Código do pacote"
-        hint="Único no sistema. Apenas números, sem espaços."
+      <CollapsibleSection
+        title="Identificação e situação"
+        subtitle="Código único, nome e situação do pacote."
       >
-        <input
-          required
-          value={codigoPacote}
-          onChange={(e) =>
-            setCodigoPacote(e.target.value.replace(/\D/g, ""))
-          }
-          autoComplete="off"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          className={`${inputCls} font-mono`}
-        />
-      </Field>
-      <Field label="Nome do pacote">
-        <input
-          required
-          value={nomePacote}
-          onChange={(e) => setNomePacote(e.target.value)}
-          className={inputCls}
-        />
-      </Field>
+        <div className="space-y-5">
+          <Field
+            label="Código do pacote"
+            hint="Único no sistema. Apenas números, sem espaços."
+          >
+            <input
+              required
+              value={codigoPacote}
+              onChange={(e) =>
+                setCodigoPacote(e.target.value.replace(/\D/g, ""))
+              }
+              autoComplete="off"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className={`${inputCls} font-mono`}
+            />
+          </Field>
+          <Field label="Nome do pacote">
+            <input
+              required
+              value={nomePacote}
+              onChange={(e) => setNomePacote(e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field
+            label="Situação"
+            hint="Classificação operacional do pacote no cadastro."
+          >
+            <select
+              value={situacao}
+              onChange={(e) =>
+                setSituacao(e.target.value as PacoteSituacaoValue)
+              }
+              className={inputCls}
+            >
+              {PACOTE_SITUACAO_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </CollapsibleSection>
 
-      <Field
-        label="Contemplação"
-        hint="Descrição geral do pacote (obrigatória). Distinta das linhas de código e descrição abaixo."
+      <CollapsibleSection
+        title="Contemplação (texto geral)"
+        subtitle="Descrição geral do pacote, distinta dos códigos TUSS abaixo."
       >
-        <textarea
-          required
-          rows={5}
-          value={textoContemplacao}
-          onChange={(e) => setTextoContemplacao(e.target.value)}
-          className={inputCls}
-        />
-      </Field>
+        <Field
+          label="Contemplação"
+          hint="Obrigatória. Distinta dos códigos TUSS e descrição na seção seguinte."
+        >
+          <textarea
+            required
+            rows={5}
+            value={textoContemplacao}
+            onChange={(e) => setTextoContemplacao(e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+      </CollapsibleSection>
 
-      <Field
-        label="Hospitais / fornecedores"
-        hint="Busque pelo CNPJ ou use o botão Cadastrar novo hospital para incluir um cadastro que ainda não existe na base. A observação de cada um vale só para este pacote."
+      <CollapsibleSection
+        title="Hospitais / fornecedores"
+        subtitle="Busca por CNPJ, cadastro de novo hospital e observações por fornecedor."
       >
         <div className="space-y-4 border border-neutral-300 bg-neutral-50/50 p-4">
           <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end">
@@ -508,61 +571,71 @@ export function PacoteForm({
             ) : (
               <ul className="mt-2 space-y-2">
                 {hospitais.map((h) => (
-                  <li
-                    key={h.id}
-                    className="space-y-2 border border-neutral-200 bg-white px-3 py-2 text-sm"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span>
-                        <span className="font-medium text-neutral-900">
-                          {h.nome}
+                  <li key={h.id} className="text-sm">
+                    <details className="group border border-neutral-200 bg-white [&_summary::-webkit-details-marker]:hidden">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 hover:bg-neutral-50">
+                        <span className="min-w-0">
+                          <span className="font-medium text-neutral-900">
+                            {h.nome}
+                          </span>
+                          <span className="mt-0.5 block font-mono text-xs text-neutral-600">
+                            {isValidCnpjDigits(h.cnpj)
+                              ? formatCnpjDisplay(h.cnpj)
+                              : h.cnpj}
+                          </span>
                         </span>
-                        <span className="ml-2 font-mono text-xs text-neutral-600">
-                          {isValidCnpjDigits(h.cnpj)
-                            ? formatCnpjDisplay(h.cnpj)
-                            : h.cnpj}
+                        <span
+                          className="shrink-0 text-[10px] text-neutral-500 transition-transform group-open:rotate-180"
+                          aria-hidden
+                        >
+                          ▼
                         </span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setHospitais((prev) =>
-                            prev.filter((x) => x.id !== h.id),
-                          )
-                        }
-                        className="text-sm text-neutral-700 underline"
-                      >
-                        Remover
-                      </button>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-neutral-600">
-                        Observação (opcional)
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={h.observacao ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setHospitais((prev) =>
-                            prev.map((x) =>
-                              x.id === h.id ? { ...x, observacao: v } : x,
-                            ),
-                          );
-                        }}
-                        placeholder="Somente para este hospital neste pacote"
-                        className={`mt-1 ${inputCls}`}
-                      />
-                    </div>
+                      </summary>
+                      <div className="space-y-2 border-t border-neutral-100 px-3 py-3">
+                        <div>
+                          <label className="text-xs font-medium text-neutral-600">
+                            Observação (opcional)
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={h.observacao ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setHospitais((prev) =>
+                                prev.map((x) =>
+                                  x.id === h.id ? { ...x, observacao: v } : x,
+                                ),
+                              );
+                            }}
+                            placeholder="Somente para este hospital neste pacote"
+                            className={`mt-1 ${inputCls}`}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setHospitais((prev) =>
+                              prev.filter((x) => x.id !== h.id),
+                            )
+                          }
+                          className="text-sm text-neutral-700 underline"
+                        >
+                          Remover do pacote
+                        </button>
+                      </div>
+                    </details>
                   </li>
                 ))}
               </ul>
             )}
           </div>
         </div>
-      </Field>
+      </CollapsibleSection>
 
-      <Field label="Contemplações (código e descrição)">
+      <CollapsibleSection
+        title="Códigos TUSS"
+        subtitle="Uma ou mais linhas com código TUSS e descrição."
+      >
         <div className="space-y-3">
           {contemplacoes.map((row, i) => (
             <div
@@ -599,7 +672,7 @@ export function PacoteForm({
                 }
                 className="text-left text-sm text-neutral-700 underline"
               >
-                Remover contemplação
+                Remover código TUSS
               </button>
             </div>
           ))}
@@ -613,10 +686,10 @@ export function PacoteForm({
             }
             className="text-sm text-neutral-800 underline"
           >
-            + Adicionar contemplação
+            + Adicionar código TUSS
           </button>
         </div>
-      </Field>
+      </CollapsibleSection>
       <div className="flex flex-wrap gap-2 border-t border-neutral-200 pt-4">
         <button
           type="submit"
@@ -630,6 +703,7 @@ export function PacoteForm({
           onClick={() => {
             setCodigoPacote("");
             setNomePacote("");
+            setSituacao(initial?.situacao ?? "ATIVO");
             setTextoContemplacao("");
             setHospitais([]);
             setContemplacoes([{ codigo: "", descricao: "" }]);

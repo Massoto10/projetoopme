@@ -12,6 +12,13 @@ enum Role {
   COLABORADOR
 }
 
+enum PacoteSituacao {
+  ATIVO
+  SUSPENSO
+  SUBSTITUIDO
+  CANCELADO
+}
+
 model User {
   id             String   @id @default(cuid())
   email          String   @unique
@@ -40,6 +47,7 @@ model Pacote {
   id                 String               @id @default(cuid())
   codigoPacote       String               @unique @map("codigo_pacote")
   nomePacote         String               @map("nome_pacote")
+  situacao           PacoteSituacao       @default(ATIVO) @map("situacao")
   textoContemplacao  String               @map("texto_contemplacao") @db.Text
   createdAt      DateTime             @default(now()) @map("created_at")
   updatedAt      DateTime             @updatedAt @map("updated_at")

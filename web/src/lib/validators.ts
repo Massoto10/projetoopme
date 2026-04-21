@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isValidCnpjDigits, normalizeCnpj } from "@/lib/cnpj";
+import { PACOTE_SITUACAO_VALUES } from "@/lib/pacote-situacao";
 
 const contemplacaoSchema = z.object({
   codigo: z.string().min(1).max(64),
@@ -28,10 +29,13 @@ export const hospitalCreateSchema = z
     path: ["cnpj"],
   });
 
+const pacoteSituacaoSchema = z.enum(PACOTE_SITUACAO_VALUES);
+
 export const pacotePayloadSchema = z
   .object({
     codigoPacote: codigoPacoteField,
     nomePacote: z.string().trim().min(1).max(500),
+    situacao: pacoteSituacaoSchema.default("ATIVO"),
     textoContemplacao: z
       .string()
       .trim()
@@ -45,7 +49,7 @@ export const pacotePayloadSchema = z
     hospitalObservacoes: z.record(z.string(), z.string().max(8000)).optional(),
     contemplacoes: z
       .array(contemplacaoSchema)
-      .min(1, "Informe ao menos uma contemplação.")
+      .min(1, "Informe ao menos um código TUSS.")
       .max(500),
   })
   .superRefine((data, ctx) => {

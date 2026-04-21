@@ -53,6 +53,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     id: pacote.id,
     codigoPacote: pacote.codigoPacote,
     nomePacote: pacote.nomePacote,
+    situacao: pacote.situacao,
     textoContemplacao: pacote.textoContemplacao ?? "",
     createdAt: pacote.createdAt,
     updatedAt: pacote.updatedAt,
@@ -100,6 +101,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const {
     codigoPacote,
     nomePacote,
+    situacao,
     textoContemplacao,
     hospitalIds,
     hospitalObservacoes,
@@ -124,6 +126,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
         codigoPacote,
         nomePacote,
         textoContemplacao,
+        situacao,
       });
       for (const hospitalId of hospitalIds) {
         await sqlInsertPacoteHospital(tx, {

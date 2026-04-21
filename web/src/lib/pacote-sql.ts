@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
+import type { PacoteSituacaoValue } from "@/lib/pacote-situacao";
 
 /**
  * Atualiza campos escalares em `pacotes` via SQL para não depender do Prisma
@@ -12,6 +13,7 @@ export async function sqlUpdatePacoteCadastro(
     codigoPacote: string;
     nomePacote: string;
     textoContemplacao: string;
+    situacao: PacoteSituacaoValue;
   },
 ): Promise<void> {
   await tx.$executeRaw`
@@ -20,6 +22,7 @@ export async function sqlUpdatePacoteCadastro(
       codigo_pacote = ${input.codigoPacote},
       nome_pacote = ${input.nomePacote},
       texto_contemplacao = ${input.textoContemplacao},
+      situacao = ${input.situacao}::"PacoteSituacao",
       updated_at = NOW()
     WHERE id = ${pacoteId}
   `;

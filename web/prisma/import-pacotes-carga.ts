@@ -2,6 +2,7 @@
  * Lê prisma/data/pacotes-carga.tsv (ou pacotes-carga-*.tsv): codigo\tnome\tcnpj
  * - Um registro de pacote por código TUSS; agrega todos os CNPJs distintos.
  * - Cria pacote (sem linhas de contemplação por código) com vínculos; texto_contemplacao = nome.
+ *   Novos pacotes ficam com situação ATIVO (default do banco / Prisma).
  *   Se já existir, só acrescenta hospitais.
  *
  * Uso: npx tsx prisma/import-pacotes-carga.ts

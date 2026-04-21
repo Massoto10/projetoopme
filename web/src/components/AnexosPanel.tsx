@@ -14,10 +14,13 @@ export function AnexosPanel({
   pacoteId,
   anexos,
   canManage,
+  showHeading = true,
 }: {
   pacoteId: string;
   anexos: Anexo[];
   canManage: boolean;
+  /** Quando falso, omite o título (útil dentro de um painel já titulado). */
+  showHeading?: boolean;
 }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
@@ -72,9 +75,11 @@ export function AnexosPanel({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-700">
-        Anexos (PDF)
-      </h2>
+      {showHeading ? (
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-700">
+          Anexos (PDF)
+        </h2>
+      ) : null}
       {error && (
         <p className="text-sm text-red-800" role="alert">
           {error}

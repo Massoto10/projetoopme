@@ -6,6 +6,11 @@ import {
   buildPacoteListWhere,
   firstQueryParam,
 } from "@/lib/pacote-list-filters";
+import {
+  labelPacoteSituacao,
+  pacoteSituacaoBadgeClass,
+  type PacoteSituacaoValue,
+} from "@/lib/pacote-situacao";
 import { prisma } from "@/lib/prisma";
 
 type PacotesSearchParams = {
@@ -43,7 +48,7 @@ export default async function PacotesListPage({
     orderBy: { updatedAt: "desc" },
     include: {
       _count: {
-        select: { hospitais: true, contemplacoes: true, anexos: true },
+        select: { anexos: true },
       },
       hospitais: {
         include: {
@@ -124,14 +129,14 @@ export default async function PacotesListPage({
             htmlFor="filtro-contemplacao"
             className="block text-xs font-medium uppercase tracking-wide text-neutral-600"
           >
-            Códigos de contemplação
+            Códigos TUSS
           </label>
           <input
             id="filtro-contemplacao"
             name="contemplacao"
             type="search"
             defaultValue={filtroContemplacao}
-            placeholder="Um ou vários, separados por vírgula"
+            placeholder="Um ou vários códigos TUSS, separados por vírgula"
             autoComplete="off"
             className="mt-1 w-full border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-400"
           />
@@ -172,8 +177,8 @@ export default async function PacotesListPage({
               <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-700">
                 Nome
               </th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-700">
-                Resumo
+              <th className="w-36 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-700">
+                Situação
               </th>
               <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-700">
                 Atualizado
@@ -212,21 +217,12 @@ export default async function PacotesListPage({
                   <td className="px-4 py-3 font-medium text-neutral-900">
                     {p.nomePacote}
                   </td>
-                  <td className="px-4 py-3 text-xs font-normal leading-relaxed text-neutral-500">
-                    <span className="tabular-nums text-neutral-600">{p._count.hospitais}</span>
-                    {" hospitais "}
-                    <span className="text-neutral-300" aria-hidden>
-                      ·
+                  <td className="w-36 px-4 py-3 text-center align-middle">
+                    <span
+                      className={`inline-block rounded px-2.5 py-1 text-xs font-medium ${pacoteSituacaoBadgeClass(p.situacao as PacoteSituacaoValue)}`}
+                    >
+                      {labelPacoteSituacao(p.situacao)}
                     </span>
-                    {" "}
-                    <span className="tabular-nums text-neutral-600">{p._count.contemplacoes}</span>
-                    {" contemplações "}
-                    <span className="text-neutral-300" aria-hidden>
-                      ·
-                    </span>
-                    {" "}
-                    <span className="tabular-nums text-neutral-600">{p._count.anexos}</span>
-                    {" PDFs"}
                   </td>
                   <td className="px-4 py-3 text-neutral-600">
                     {p.updatedAt.toLocaleString("pt-BR")}
@@ -236,6 +232,7 @@ export default async function PacotesListPage({
                       pacoteId={p.id}
                       codigoPacote={p.codigoPacote}
                       nomePacote={p.nomePacote}
+                      situacao={p.situacao as PacoteSituacaoValue}
                       textoContemplacaoPreview={(() => {
                         const t = p.textoContemplacao ?? "";
                         return t.length > previewLen

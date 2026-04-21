@@ -7,6 +7,11 @@ import {
   PacoteHospitaisBuscaCnpj,
   type PacoteHospitalBuscaItem,
 } from "@/components/PacoteHospitaisBuscaCnpj";
+import {
+  labelPacoteSituacao,
+  pacoteSituacaoBadgeClass,
+  type PacoteSituacaoValue,
+} from "@/lib/pacote-situacao";
 
 /** @deprecated Use PacoteHospitalBuscaItem; mantido para compatibilidade. */
 export type PacoteDetailsHospital = PacoteHospitalBuscaItem;
@@ -20,6 +25,7 @@ type Props = {
   pacoteId: string;
   codigoPacote: string;
   nomePacote: string;
+  situacao: PacoteSituacaoValue;
   textoContemplacaoPreview: string;
   hospitais: PacoteHospitalBuscaItem[];
   contemplacoes: PacoteDetailsContemplacao[];
@@ -31,6 +37,7 @@ export function PacoteRowDetailsDialog({
   pacoteId,
   codigoPacote,
   nomePacote,
+  situacao,
   textoContemplacaoPreview,
   hospitais,
   contemplacoes,
@@ -127,6 +134,13 @@ export function PacoteRowDetailsDialog({
                 <p className="mt-1 text-sm leading-snug text-neutral-600">
                   {nomePacote}
                 </p>
+                <p className="mt-2">
+                  <span
+                    className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${pacoteSituacaoBadgeClass(situacao)}`}
+                  >
+                    {labelPacoteSituacao(situacao)}
+                  </span>
+                </p>
               </div>
               <button
                 type="button"
@@ -165,11 +179,11 @@ export function PacoteRowDetailsDialog({
 
               <section className="border-t border-neutral-200 pt-5 pb-5">
                 <h3 className="text-[0.7rem] font-semibold uppercase tracking-wide text-neutral-500">
-                  Contemplações (código)
+                  Códigos TUSS
                 </h3>
                 <ul className="mt-3 space-y-4 text-sm text-neutral-800">
                   {contemplacoes.length === 0 ? (
-                    <li className="text-neutral-500">Nenhuma</li>
+                    <li className="text-neutral-500">Nenhum</li>
                   ) : (
                     contemplacoes.map((c, i) => (
                       <li

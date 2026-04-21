@@ -65,22 +65,35 @@ export function PacoteHospitaisBuscaCnpj({
       {filtrados.length === 0 ? (
         <p className="text-sm text-neutral-500">{filteredEmptyMessage}</p>
       ) : (
-        <ul className="space-y-3 text-sm leading-snug text-neutral-800">
+        <ul className="space-y-2 text-sm leading-snug text-neutral-800">
           {filtrados.map((row) => (
-            <li
-              key={row.id}
-              className="border-b border-neutral-100 pb-3 last:border-0"
-            >
-              <span className="font-medium text-neutral-900">{row.nome}</span>
-              <span className="mt-1 block text-sm text-neutral-600">
-                CNPJ {row.cnpjLabel}
-              </span>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-700">
-                <span className="font-medium text-neutral-800">
-                  Observação:{" "}
-                </span>
-                {row.observacao.trim() ? row.observacao.trim() : "—"}
-              </p>
+            <li key={row.id}>
+              <details className="group border border-neutral-200 bg-white [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 hover:bg-neutral-50">
+                  <span className="min-w-0">
+                    <span className="font-medium text-neutral-900">
+                      {row.nome}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-neutral-600">
+                      CNPJ {row.cnpjLabel}
+                    </span>
+                  </span>
+                  <span
+                    className="shrink-0 text-[10px] text-neutral-500 transition-transform group-open:rotate-180"
+                    aria-hidden
+                  >
+                    ▼
+                  </span>
+                </summary>
+                <div className="border-t border-neutral-100 px-3 py-3">
+                  <p className="whitespace-pre-wrap text-sm text-neutral-700">
+                    <span className="font-medium text-neutral-800">
+                      Observação:{" "}
+                    </span>
+                    {row.observacao.trim() ? row.observacao.trim() : "—"}
+                  </p>
+                </div>
+              </details>
             </li>
           ))}
         </ul>

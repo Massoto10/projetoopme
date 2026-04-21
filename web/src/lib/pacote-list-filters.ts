@@ -10,7 +10,7 @@ export function firstQueryParam(
   return "";
 }
 
-/** Separa códigos de contemplação por vírgula, ponto e vírgula ou espaço. */
+/** Separa códigos TUSS (filtro da listagem) por vírgula, ponto e vírgula ou espaço. */
 export function parseContemplacaoCodigos(raw: string): string[] {
   const s = raw.trim();
   if (!s) return [];

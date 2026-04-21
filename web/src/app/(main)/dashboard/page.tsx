@@ -22,7 +22,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-neutral-900">Pacotes</h2>
           <p className="mt-2 text-sm text-neutral-600">
             Listagem, cadastro e edição: hospitais (cadastro por CNPJ),
-            contemplações e documentos PDF.
+            códigos TUSS e documentos PDF.
           </p>
         </Link>
         {isAdmin ? (
